@@ -1,0 +1,31 @@
+name: Mergenet lab
+on:
+  push:
+    branches: ['mergenet/ci/**']
+permissions:
+  contents: read
+  statuses: write
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch exact candidate
+        run: |
+          git init .
+          git remote add origin "https://github.com/$GITHUB_REPOSITORY.git"
+          git fetch --depth=1 origin "$GITHUB_SHA"
+          git checkout --detach FETCH_HEAD
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+      - name: Run candidate tests
+        run: python3 -m unittest discover -s tests
+      - name: Record exact-tip verdict
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_STATE: ${{ job.status }}
+        run: |
+          state=failure
+          if [ "$JOB_STATE" = success ]; then state=success; fi
+          gh api "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
+            -f state="$state" -f context=ci/mergenet-lab \
+            -f target_url="https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"

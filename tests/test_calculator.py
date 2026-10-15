@@ -9,3 +9,7 @@ class Clamp(unittest.TestCase):
     def test_invalid_bounds(self):
         with self.assertRaises(ValueError):
             clamp(5, 10, 0)
+
+    def test_endpoints(self):
+        self.assertEqual(clamp(0, 0, 10), 0)
+        self.assertEqual(clamp(10, 0, 10), 10)
